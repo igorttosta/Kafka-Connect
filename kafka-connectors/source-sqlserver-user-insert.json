@@ -1,0 +1,22 @@
+{
+    "name": "source-sqlserver-user-insert",
+    "config": {
+        "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
+        "database.hostname": "sqlserver",
+        "database.port": "1433",
+        "database.server.name": "uga",
+        "database.instance": "uga",
+        "database.names": "uga",
+        "topic.prefix": "uga",
+        "database.dbname": "uga",
+        "database.user": "sa",
+        "database.password": "Testadmin1@",
+        "database.encrypt": "false",
+        "database.history.kafka.bootstrap.servers": "broker:9092",
+        "schema.history.internal.kafka.topic": "uga-user",
+        "schema.history.internal.kafka.bootstrap.servers":"broker:29092",
+        "database.history.kafka.topic": "uga.user",
+        "table.include.list": "dbo.USER_",
+        "decimal.handling.mode": "double"
+    }
+}

@@ -7,7 +7,7 @@
         "database.user": "admin",
         "database.password": "admin",
         "database.dbname": "mypostgresdb",
-        "table.include.list": "public.user",
+        "table.include.list": "public.user_, public.user_purchase, public.user_address",
         "topic.prefix": "postgresql",
         "plugin.name": "pgoutput"
     }
