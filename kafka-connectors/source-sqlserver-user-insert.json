@@ -16,7 +16,7 @@
         "schema.history.internal.kafka.topic": "uga-user",
         "schema.history.internal.kafka.bootstrap.servers":"broker:29092",
         "database.history.kafka.topic": "uga.user",
-        "table.include.list": "dbo.USER_",
+        "table.include.list": "dbo.USER_, dbo.USER_PURCHASE",
         "decimal.handling.mode": "double"
     }
 }
