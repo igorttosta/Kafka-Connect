@@ -10,19 +10,29 @@ services:
       POSTGRES_DB: mypostgresdb
     ports:
       - 5432:5432
+    volumes:
+      - ./create-sql/postgres:/docker-entrypoint-initdb.d
     command:
       - "postgres"
       - "-c"
       - "wal_level=logical"
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server
-    container_name: sqlserver
+  postgres2:
+    image: postgres:latest
+    restart: always
     environment:
-      SA_PASSWORD: Testadmin1@
-      ACCEPT_EULA: Y
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: mypostgresdb2
     ports:
-      - 1433:1433
+      - 5431:5432
+    volumes:
+      - ./create-sql/postgres2:/docker-entrypoint-initdb.d
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      
 
   zookeeper:
     image: confluentinc/cp-zookeeper:6.2.0
@@ -67,6 +77,8 @@ services:
     depends_on:
       - broker
       - schema-registry
+      - postgres2
+      - postgres
     ports:
       - 8083:8083
     environment:
@@ -76,8 +88,10 @@ services:
       CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
       CONNECT_STATUS_STORAGE_TOPIC: _connect-status
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false" # Define que os dados não terão o schema
       CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
       CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
@@ -87,6 +101,7 @@ services:
       CONNECT_PLUGIN_PATH: /usr/share/java,/usr/share/confluent-hub-components,/data/connect-jars
     volumes:
       - $PWD/data:/data
+      - ./kafka-connectors:/connectors
     command:
       - bash
       - -c
@@ -95,8 +110,45 @@ services:
         confluent-hub install --no-prompt debezium/debezium-connector-postgresql:2.2.1
         confluent-hub install --no-prompt debezium/debezium-connector-sqlserver:2.2.1
         confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.7.3
+        echo "Listing connectors directory"
+        ls -l /connectors
         echo "Launching Kafka Connect worker"
         /etc/confluent/docker/run &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/source-postgresql.json \
+          http://localhost:8083/connectors &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/source-postgresql2-user-insert.json \
+          http://localhost:8083/connectors &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/sink-user_insert.json \
+          http://localhost:8083/connectors &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/sink-user_purchase2.json \
+          http://localhost:8083/connectors &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/sink-user-adress.json \
+          http://localhost:8083/connectors &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/sink-user-purchase.json \
+          http://localhost:8083/connectors &
+        sleep 30
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          --data @/connectors/sink-user.json \
+          http://localhost:8083/connectors &
         sleep infinity
 
   ksqldb:
@@ -105,6 +157,7 @@ services:
     depends_on:
       - broker
       - schema-registry
+      - kafka-connect
     ports:
       - "8088:8088"
     environment:
@@ -117,6 +170,10 @@ services:
       KSQL_STREAMS_PRODUCER_MAX_BLOCK_MS: 9223372036854776000
       KSQL_KSQL_SERVICE_ID: confluent_rmoff_01
       KSQL_KSQL_HIDDEN_TOPICS: '^_.*'
+    volumes:
+      - ./ksql:/docker-entrypoint-initdb.d/ksql
+      - ./execute-scripts.sh:/docker-entrypoint-initdb.d/execute-scripts.sh
+    command: /bin/sh -c "/usr/bin/docker/run & ksql-datagen & sleep 120 && /docker-entrypoint-initdb.d/execute-scripts.sh & sleep infinity"
 
   control-center:
     image: confluentinc/cp-enterprise-control-center:6.2.0
