@@ -1,0 +1,22 @@
+{
+    "name": "sink-user-purchase2",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "tasks.max": "1",
+        "topics": "SINK_USER_PURCHASE2",
+        "connection.url": "jdbc:postgresql://postgres2:5432/mypostgresdb2",
+        "connection.user": "admin",
+        "connection.password": "admin",
+        "insert.mode": "insert",
+        "auto.evolve": "true",
+        "table.name.format": "public.USER_PURCHASE2",
+        "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "value.converter": "io.confluent.connect.avro.AvroConverter",
+        "auto.create": "true",
+        "value.converter.schemas.enable": "false",
+        
+        
+        "value.converter.schema.registry.url": "http://schema-registry:8081",
+         "delete.enabled": "false"
+    }
+}
