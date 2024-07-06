@@ -1,14 +1,14 @@
 {
-    "name": "postgresql-connector",
+    "name": "postgresql-user-insert-connector",
     "config": {
         "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-        "database.hostname": "postgres",
+        "database.hostname": "postgres2",
         "database.port": "5432",
         "database.user": "admin",
         "database.password": "admin",
-        "database.dbname": "mypostgresdb",
-        "table.include.list": "public.USER_, public.USER_PURCHASE, public.USER_ADDRESS",
-        "topic.prefix": "postgresql",
+        "database.dbname": "mypostgresdb2",
+        "table.include.list": "public.USER_INSERT, public.USER_PURCHASE2",
+        "topic.prefix": "postgresql2",
         "plugin.name": "pgoutput",
         "decimal.handling.mode": "double"
     }
